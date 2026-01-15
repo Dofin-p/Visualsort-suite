@@ -5,56 +5,152 @@ const playBtn = document.getElementById("play-btn");
 const prevBtn = document.getElementById("prev-btn");
 const nextBtn = document.getElementById("next-btn");
 const errorEl = document.getElementById("error");
+const statusAlgo = document.getElementById("status-algo");
 const statusI = document.getElementById("status-i");
 const statusJ = document.getElementById("status-j");
+const statusMin = document.getElementById("status-min");
+const statusMinWrap = document.getElementById("status-min-wrap");
+const statusKey = document.getElementById("status-key");
+const statusKeyWrap = document.getElementById("status-key-wrap");
 const statusStep = document.getElementById("status-step");
 const logList = document.getElementById("log-list");
-const codeLines = document.querySelectorAll("#code-lines li");
+const codeContainer = document.getElementById("code-lines");
+const tabs = document.querySelectorAll(".tab");
+const heroEyebrow = document.getElementById("hero-eyebrow");
+const heroTitle = document.getElementById("hero-title");
+const heroSub = document.getElementById("hero-sub");
+const mainTitle = document.getElementById("main-title");
 
 const DEFAULT_VALUES = [8, 3, 1, 5, 2, 7];
 const MAX_ITEMS = 15;
 const STEP_INTERVAL = 700;
 
+const ALGORITHMS = {
+  bubble: {
+    key: "bubble",
+    label: "Bubble Sort",
+    short: "Bubble",
+    title: "隣同士の交換が見えるバブルソート",
+    description: "右端へ大きな値が泡のように浮かび上がる様子を、コード行と同期して追いかけます。",
+    mainTitle: "バブルソート可視化",
+    code: [
+      "for (let i = 0; i < n - 1; i++) {",
+      "  let swapped = false;",
+      "  for (let j = 0; j < n - i - 1; j++) {",
+      "    // compare",
+      "    if (arr[j] > arr[j + 1]) {",
+      "      [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];",
+      "      swapped = true;",
+      "    }",
+      "  }",
+      "  if (!swapped) break;",
+      "}",
+    ],
+    generator: generateBubbleSteps,
+  },
+  selection: {
+    key: "selection",
+    label: "Selection Sort",
+    short: "Select",
+    title: "最小値を選んで先頭へ送るセレクションソート",
+    description: "未確定領域から最小値を探し、紫のハイライトで追跡しながら左端に並べます。",
+    mainTitle: "選択ソート可視化",
+    code: [
+      "for (let i = 0; i < n - 1; i++) {",
+      "  let minIdx = i;",
+      "  for (let j = i + 1; j < n; j++) {",
+      "    if (arr[j] < arr[minIdx]) {",
+      "      minIdx = j;",
+      "    }",
+      "  }",
+      "  if (minIdx !== i) {",
+      "    [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];",
+      "  }",
+      "}",
+    ],
+    generator: generateSelectionSteps,
+  },
+  insertion: {
+    key: "insertion",
+    label: "Insertion Sort",
+    short: "Insert",
+    title: "手札を揃えるように滑り込む挿入ソート",
+    description: "1枚ずつ適切な位置へ潜り込む動きを、左側の整列エリアとともに可視化します。",
+    mainTitle: "挿入ソート可視化",
+    code: [
+      "for (let i = 1; i < n; i++) {",
+      "  let j = i;",
+      "  while (j > 0 && arr[j - 1] > arr[j]) {",
+      "    [arr[j - 1], arr[j]] = [arr[j], arr[j - 1]];",
+      "    j--;",
+      "  }",
+      "}",
+    ],
+    generator: generateInsertionSteps,
+  },
+};
+
 let steps = [];
+let codeLineElements = [];
 let currentStep = 0;
 let playing = false;
 let timer = null;
+let currentValues = [...DEFAULT_VALUES];
+let currentAlgo = "bubble";
 const barMap = new Map();
 
 function toSnapshot(items) {
   return items.map((item) => ({ id: item.id, value: item.value }));
 }
 
-function makeLog(message) {
-  return message;
+function createItems(values) {
+  const stamp = `${Date.now().toString(16)}-${Math.random().toString(16).slice(2, 8)}`;
+  return values.map((value, index) => ({
+    id: `${stamp}-${index}`,
+    value,
+  }));
+}
+
+function makeLeftSorted(count) {
+  return Array.from({ length: Math.max(0, count) }, (_, idx) => idx);
+}
+
+function makeRightSorted(boundary, length) {
+  const sorted = [];
+  for (let idx = boundary + 1; idx < length; idx++) {
+    sorted.push(idx);
+  }
+  return sorted;
 }
 
 function pushStep(stepList, payload) {
   stepList.push({
+    active: payload.active ?? [],
+    special: payload.special ?? [],
+    sortedIndices: payload.sortedIndices ?? null,
+    sortedIndex: payload.sortedIndex ?? null,
+    keyValue: payload.keyValue ?? null,
+    minIdx: payload.minIdx ?? null,
     ...payload,
     array: toSnapshot(payload.array),
   });
 }
 
-function generateSteps(values) {
-  const arr = values.map((value, index) => ({
-    id: `${Date.now()}-${index}-${value}`,
-    value,
-  }));
+function generateBubbleSteps(values) {
+  const arr = createItems(values);
   const list = [];
+  let sortedBoundary = values.length - 1;
 
   pushStep(list, {
     type: "start",
     i: null,
     j: null,
     active: [],
-    sortedIndex: values.length - 1,
+    sortedIndex: sortedBoundary,
     array: arr,
     line: 1,
-    log: makeLog("ソートを開始します。"),
+    log: "ソートを開始します。",
   });
-
-  let sortedBoundary = values.length - 1;
 
   for (let i = 0; i < arr.length - 1; i++) {
     let swapped = false;
@@ -69,9 +165,7 @@ function generateSteps(values) {
         sortedIndex: sortedBoundary,
         array: arr,
         line: 5,
-        log: makeLog(
-          `${left}と${right}を比較します。`
-        ),
+        log: `${left}と${right}を比較します。`,
       });
 
       if (left > right) {
@@ -85,9 +179,7 @@ function generateSteps(values) {
           sortedIndex: sortedBoundary,
           array: arr,
           line: 6,
-          log: makeLog(
-            `${left}の方が大きいので交換します。`
-          ),
+          log: `${left}の方が大きいので交換します。`,
         });
       }
     }
@@ -98,9 +190,10 @@ function generateSteps(values) {
       j: null,
       active: [],
       sortedIndex: sortedBoundary,
+      sortedIndices: makeRightSorted(sortedBoundary, arr.length),
       array: arr,
       line: 9,
-      log: makeLog("右端の値が確定しました。"),
+      log: "右端の値が確定しました。",
     });
 
     if (!swapped) {
@@ -110,13 +203,218 @@ function generateSteps(values) {
         j: null,
         active: [],
         sortedIndex: -1,
+        sortedIndices: makeLeftSorted(arr.length),
         array: arr,
         line: 10,
-        log: makeLog("交換が発生しないので終了します。"),
+        log: "交換が発生しないので終了します。",
       });
       break;
     }
   }
+
+  return list;
+}
+
+function generateSelectionSteps(values) {
+  const arr = createItems(values);
+  const list = [];
+
+  pushStep(list, {
+    type: "start",
+    i: null,
+    j: null,
+    active: [],
+    special: [],
+    sortedIndices: [],
+    array: arr,
+    line: 1,
+    log: "最小値探索を開始します。",
+  });
+
+  for (let i = 0; i < arr.length - 1; i++) {
+    let minIdx = i;
+    pushStep(list, {
+      type: "mark-min",
+      i,
+      j: null,
+      active: [i],
+      special: [minIdx],
+      sortedIndices: makeLeftSorted(i),
+      array: arr,
+      line: 2,
+      minIdx,
+      log: `${arr[i].value}を暫定最小値とします。`,
+    });
+
+    for (let j = i + 1; j < arr.length; j++) {
+      const candidate = arr[j].value;
+      const currentMin = arr[minIdx].value;
+      pushStep(list, {
+        type: "compare",
+        i,
+        j,
+        active: [j],
+        special: [minIdx],
+        sortedIndices: makeLeftSorted(i),
+        array: arr,
+        line: 4,
+        minIdx,
+        log: `${candidate}と最小値${currentMin}を比較します。`,
+      });
+
+      if (candidate < currentMin) {
+        minIdx = j;
+        pushStep(list, {
+          type: "mark-min",
+          i,
+          j,
+          active: [j],
+          special: [minIdx],
+          sortedIndices: makeLeftSorted(i),
+          array: arr,
+          line: 5,
+          minIdx,
+          log: `${candidate}が新しい最小値です。`,
+        });
+      }
+    }
+
+    if (minIdx !== i) {
+      [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+      pushStep(list, {
+        type: "swap",
+        i,
+        j: minIdx,
+        active: [i, minIdx],
+        special: [minIdx],
+        sortedIndices: makeLeftSorted(i),
+        array: arr,
+        line: 9,
+        minIdx,
+        log: `${i}番目と${minIdx}番目を交換します。`,
+      });
+    }
+
+    const sorted = makeLeftSorted(i + 1);
+    pushStep(list, {
+      type: "sorted",
+      i,
+      j: null,
+      active: [],
+      special: [],
+      sortedIndices: sorted,
+      array: arr,
+      line: 11,
+      minIdx: null,
+      log: `${i}番目の要素を確定しました。`,
+    });
+  }
+
+  pushStep(list, {
+    type: "sorted-all",
+    i: null,
+    j: null,
+    active: [],
+    special: [],
+    sortedIndices: makeLeftSorted(arr.length),
+    array: arr,
+    line: 11,
+    minIdx: null,
+    log: "全て整列しました。",
+  });
+
+  return list;
+}
+
+function generateInsertionSteps(values) {
+  const arr = createItems(values);
+  const list = [];
+
+  pushStep(list, {
+    type: "start",
+    i: null,
+    j: null,
+    active: [],
+    array: arr,
+    line: 1,
+    log: "挿入ソートを開始します。",
+  });
+
+  for (let i = 1; i < arr.length; i++) {
+    let j = i;
+    const keyValue = arr[i].value;
+
+    pushStep(list, {
+      type: "activate",
+      i,
+      j,
+      active: [i],
+      sortedIndices: makeLeftSorted(i),
+      array: arr,
+      line: 2,
+      keyValue,
+      log: `${keyValue}の挿入位置を探します。`,
+    });
+
+    while (j > 0) {
+      const left = arr[j - 1].value;
+      const current = arr[j].value;
+      pushStep(list, {
+        type: "compare",
+        i,
+        j,
+        active: [j - 1, j],
+        sortedIndices: makeLeftSorted(i),
+        array: arr,
+        line: 3,
+        keyValue,
+        log: `${left}と${current}を比較します。`,
+      });
+
+      if (left <= current) {
+        break;
+      }
+
+      [arr[j - 1], arr[j]] = [arr[j], arr[j - 1]];
+      pushStep(list, {
+        type: "swap",
+        i,
+        j,
+        active: [j - 1, j],
+        sortedIndices: makeLeftSorted(i),
+        array: arr,
+        line: 4,
+        keyValue,
+        log: `${current}を左へ移動します。`,
+      });
+
+      j -= 1;
+    }
+
+    const sorted = makeLeftSorted(i + 1);
+    pushStep(list, {
+      type: "sorted",
+      i,
+      j,
+      active: [j],
+      sortedIndices: sorted,
+      array: arr,
+      line: 7,
+      keyValue,
+      log: `${i}番目まで整列済みです。`,
+    });
+  }
+
+  pushStep(list, {
+    type: "sorted-all",
+    i: null,
+    j: null,
+    active: [],
+    sortedIndices: makeLeftSorted(arr.length),
+    array: arr,
+    line: 7,
+    log: "全て整列しました。",
+  });
 
   return list;
 }
@@ -168,9 +466,10 @@ function ensureBars(items) {
 
 function updateBars(step) {
   const items = step.array;
-  chart.style.setProperty("--count", items.length);
+  chart.style.setProperty("--count", items.length || 1);
   ensureBars(items);
-  const maxValue = Math.max(...items.map((item) => item.value));
+  const maxValue = Math.max(...items.map((item) => item.value), 0);
+  const sortedSet = new Set(step.sortedIndices || []);
 
   items.forEach((item, index) => {
     const bar = barMap.get(item.id);
@@ -181,23 +480,41 @@ function updateBars(step) {
     bar.style.height = `${height}%`;
     const inner = bar.querySelector(".bar-inner");
     inner.textContent = item.value.toString();
-    bar.classList.toggle("active", step.active.includes(index));
-    bar.classList.toggle("swapping", step.type === "swap" && step.active.includes(index));
+
+    const isSortedByBoundary =
+      typeof step.sortedIndex === "number" &&
+      (step.sortedIndex < 0 || index > step.sortedIndex);
     const isSorted =
-      step.sortedIndex < 0 || index > step.sortedIndex;
+      (sortedSet.size > 0 && sortedSet.has(index)) || isSortedByBoundary;
+
+    bar.classList.toggle("active", step.active?.includes(index));
+    bar.classList.toggle(
+      "swapping",
+      step.type === "swap" && step.active?.includes(index)
+    );
     bar.classList.toggle("sorted", isSorted);
+    bar.classList.toggle("mark", step.special?.includes(index));
   });
 }
 
 function updateStatus(step) {
-  statusI.textContent = step.i === null ? "-" : step.i.toString();
-  statusJ.textContent = step.j === null ? "-" : step.j.toString();
+  statusAlgo.textContent = ALGORITHMS[currentAlgo].short;
+  statusI.textContent = step.i === null || step.i === undefined ? "-" : step.i.toString();
+  statusJ.textContent = step.j === null || step.j === undefined ? "-" : step.j.toString();
   statusStep.textContent = (currentStep + 1).toString();
+
+  const showMin = step.minIdx !== null && step.minIdx !== undefined;
+  statusMinWrap.classList.toggle("show", showMin);
+  statusMin.textContent = showMin ? step.minIdx.toString() : "-";
+
+  const showKey = step.keyValue !== null && step.keyValue !== undefined;
+  statusKeyWrap.classList.toggle("show", showKey);
+  statusKey.textContent = showKey ? step.keyValue.toString() : "-";
 }
 
 function updateLog(index) {
   logList.innerHTML = "";
-  const logs = steps.slice(0, index + 1).map((step) => step.log);
+  const logs = steps.slice(0, index + 1).map((step) => step.log || "");
   logs.slice(-6).forEach((line) => {
     const li = document.createElement("li");
     li.textContent = line;
@@ -206,7 +523,7 @@ function updateLog(index) {
 }
 
 function highlightLine(line) {
-  codeLines.forEach((li) => {
+  codeLineElements.forEach((li) => {
     li.classList.toggle("active", Number(li.dataset.line) === line);
   });
 }
@@ -250,27 +567,57 @@ function play() {
 
 function goStep(delta) {
   stopPlaying();
-  const nextIndex = Math.min(
-    Math.max(currentStep + delta, 0),
-    steps.length - 1
-  );
+  const nextIndex = Math.min(Math.max(currentStep + delta, 0), steps.length - 1);
   currentStep = nextIndex;
   renderStep(currentStep);
 }
 
+function setCodeLines(lines) {
+  codeContainer.innerHTML = "";
+  codeLineElements = lines.map((line, idx) => {
+    const li = document.createElement("li");
+    li.dataset.line = (idx + 1).toString();
+    li.textContent = line;
+    codeContainer.appendChild(li);
+    return li;
+  });
+}
+
 function setNewValues(values) {
+  currentValues = [...values];
+  stopPlaying();
   barMap.clear();
   chart.innerHTML = "";
-  steps = generateSteps(values);
+  const generator = ALGORITHMS[currentAlgo].generator;
+  steps = generator(values);
   currentStep = 0;
   renderStep(currentStep);
+}
+
+function setAlgorithm(algoKey, options = { regenerate: true }) {
+  const config = ALGORITHMS[algoKey];
+  if (!config) return;
+  currentAlgo = algoKey;
+  tabs.forEach((tab) => {
+    const isActive = tab.dataset.algo === algoKey;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  heroEyebrow.textContent = config.label;
+  heroTitle.textContent = config.title;
+  heroSub.textContent = config.description;
+  mainTitle.textContent = config.mainTitle;
+  setCodeLines(config.code);
+  if (options.regenerate) {
+    setNewValues(currentValues);
+  }
 }
 
 applyBtn.addEventListener("click", () => {
   const value = input.value.trim();
   if (!value) {
-    setNewValues(DEFAULT_VALUES);
     clearError();
+    setNewValues(DEFAULT_VALUES);
     return;
   }
   const result = parseInput(value);
@@ -286,4 +633,12 @@ playBtn.addEventListener("click", play);
 prevBtn.addEventListener("click", () => goStep(-1));
 nextBtn.addEventListener("click", () => goStep(1));
 
-setNewValues(DEFAULT_VALUES);
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    const algoKey = tab.dataset.algo;
+    setAlgorithm(algoKey);
+  });
+});
+
+setAlgorithm(currentAlgo, { regenerate: false });
+setNewValues(currentValues);

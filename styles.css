@@ -5,6 +5,7 @@
   --accent: #ffb02e;
   --accent-strong: #ff6a3d;
   --calm: #2d8cff;
+  --mark: #d946ef;
   --muted: #5b5b5b;
   --card: rgba(255, 255, 255, 0.86);
   --shadow: 0 20px 50px rgba(25, 20, 15, 0.15);
@@ -33,6 +34,49 @@ body {
 .hero-inner {
   max-width: 980px;
   margin: 0 auto;
+}
+
+.topbar {
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.algo-tabs {
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.64);
+  padding: 6px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.tab {
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.2s ease;
+}
+
+.tab:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.tab.active {
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
 .eyebrow {
@@ -109,6 +153,14 @@ h1 {
   letter-spacing: 0.2em;
 }
 
+.status-optional {
+  display: none;
+}
+
+.status-optional.show {
+  display: inline-flex;
+}
+
 .chart {
   position: relative;
   height: 260px;
@@ -160,6 +212,11 @@ h1 {
   color: #fff;
 }
 
+.bar.mark .bar-inner {
+  background: var(--mark);
+  color: #fff;
+}
+
 .controls {
   margin-top: 22px;
 }
@@ -184,7 +241,7 @@ input[type="text"] {
   font-size: 0.95rem;
 }
 
-button {
+button:not(.tab) {
   border: none;
   padding: 10px 16px;
   border-radius: 999px;
@@ -195,7 +252,7 @@ button {
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
-button:hover {
+button:not(.tab):hover {
   transform: translateY(-1px);
   background: #000;
 }

@@ -3,15 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bubble Visualizer</title>
+    <title>VisualSort Suite</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
+      <div class="topbar">
+        <div class="brand">VisualSort Suite</div>
+        <div class="algo-tabs" id="algo-tabs" role="tablist" aria-label="アルゴリズム切替">
+          <button class="tab active" role="tab" aria-selected="true" data-algo="bubble">
+            Bubble Sort
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-algo="selection">
+            Selection Sort
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-algo="insertion">
+            Insertion Sort
+          </button>
+        </div>
+      </div>
       <div class="hero-inner">
-        <p class="eyebrow">Bubble Visualizer</p>
-        <h1>隣同士の交換が見えるバブルソート</h1>
-        <p class="sub">
+        <p class="eyebrow" id="hero-eyebrow">Bubble Sort</p>
+        <h1 id="hero-title">隣同士の交換が見えるバブルソート</h1>
+        <p class="sub" id="hero-sub">
           右端へ大きな値が浮かび上がる様子を、コードの実行行と同期して可視化します。
         </p>
       </div>
@@ -20,10 +34,17 @@
     <main class="layout">
       <section class="panel">
         <div class="panel-header">
-          <h2>メインビジュアル</h2>
+          <h2 id="main-title">メインビジュアル</h2>
           <div class="status">
+            <div><span>Algo</span><strong id="status-algo">Bubble</strong></div>
             <div><span>i</span><strong id="status-i">-</strong></div>
             <div><span>j</span><strong id="status-j">-</strong></div>
+            <div class="status-optional" id="status-min-wrap">
+              <span>min</span><strong id="status-min">-</strong>
+            </div>
+            <div class="status-optional" id="status-key-wrap">
+              <span>key</span><strong id="status-key">-</strong>
+            </div>
             <div><span>Step</span><strong id="status-step">0</strong></div>
           </div>
         </div>
