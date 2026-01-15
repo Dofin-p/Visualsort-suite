@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bubble Visualizer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <p class="eyebrow">Bubble Visualizer</p>
+        <h1>隣同士の交換が見えるバブルソート</h1>
+        <p class="sub">
+          右端へ大きな値が浮かび上がる様子を、コードの実行行と同期して可視化します。
+        </p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>メインビジュアル</h2>
+          <div class="status">
+            <div><span>i</span><strong id="status-i">-</strong></div>
+            <div><span>j</span><strong id="status-j">-</strong></div>
+            <div><span>Step</span><strong id="status-step">0</strong></div>
+          </div>
+        </div>
+
+        <div class="chart" id="chart" aria-live="polite"></div>
+
+        <div class="controls">
+          <label for="input-values">カスタム入力（カンマ区切り）</label>
+          <div class="input-row">
+            <input
+              id="input-values"
+              type="text"
+              inputmode="numeric"
+              placeholder="8, 3, 1, 5, 2"
+              aria-describedby="input-help"
+            />
+            <button id="apply-btn" type="button">反映</button>
+          </div>
+          <p id="input-help" class="hint">5〜10個推奨 / 最大15個まで</p>
+          <p id="error" class="error" role="alert" aria-live="assertive"></p>
+
+          <div class="playback">
+            <button id="prev-btn" type="button">Prev</button>
+            <button id="play-btn" type="button">Play</button>
+            <button id="next-btn" type="button">Next</button>
+          </div>
+        </div>
+
+        <div class="log">
+          <h3>実行ログ</h3>
+          <ul id="log-list"></ul>
+        </div>
+      </section>
+
+      <aside class="code-panel">
+        <h2>コードビュー</h2>
+        <ol class="code" id="code-lines">
+          <li data-line="1">for (let i = 0; i &lt; n - 1; i++) {</li>
+          <li data-line="2">  let swapped = false;</li>
+          <li data-line="3">  for (let j = 0; j &lt; n - i - 1; j++) {</li>
+          <li data-line="4">    // compare</li>
+          <li data-line="5">    if (arr[j] &gt; arr[j + 1]) {</li>
+          <li data-line="6">      [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];</li>
+          <li data-line="7">      swapped = true;</li>
+          <li data-line="8">    }</li>
+          <li data-line="9">  }</li>
+          <li data-line="10">  if (!swapped) break;</li>
+          <li data-line="11">}</li>
+        </ol>
+      </aside>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
