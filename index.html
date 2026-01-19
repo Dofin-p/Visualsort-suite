@@ -23,6 +23,9 @@
           <button class="tab" role="tab" aria-selected="false" data-algo="quick">
             Quick Sort
           </button>
+          <button class="tab" role="tab" aria-selected="false" data-algo="merge">
+            Merge Sort
+          </button>
         </div>
       </div>
       <div class="hero-inner">
@@ -50,6 +53,9 @@
             </div>
             <div class="status-optional" id="status-pivot-wrap">
               <span>pivot</span><strong id="status-pivot">-</strong>
+            </div>
+            <div class="status-optional" id="status-mid-wrap">
+              <span>mid</span><strong id="status-mid">-</strong>
             </div>
             <div class="status-optional" id="status-range-wrap">
               <span>range</span><strong id="status-range">-</strong>
@@ -89,7 +95,13 @@
       </section>
 
       <aside class="code-panel">
-        <h2>コードビュー</h2>
+        <div class="code-panel-header">
+          <h2>コードビュー</h2>
+          <div class="copy-wrap">
+            <button id="copy-code-btn" type="button" class="copy-btn" aria-label="コードをコピー">Copy</button>
+            <span id="copy-status" class="copy-status" aria-live="polite"></span>
+          </div>
+        </div>
         <ol class="code" id="code-lines">
           <li data-line="1">for (let i = 0; i &lt; n - 1; i++) {</li>
           <li data-line="2">  let swapped = false;</li>

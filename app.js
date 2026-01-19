@@ -14,11 +14,15 @@ const statusKey = document.getElementById("status-key");
 const statusKeyWrap = document.getElementById("status-key-wrap");
 const statusPivot = document.getElementById("status-pivot");
 const statusPivotWrap = document.getElementById("status-pivot-wrap");
+const statusMid = document.getElementById("status-mid");
+const statusMidWrap = document.getElementById("status-mid-wrap");
 const statusRange = document.getElementById("status-range");
 const statusRangeWrap = document.getElementById("status-range-wrap");
 const statusStep = document.getElementById("status-step");
 const logList = document.getElementById("log-list");
 const codeContainer = document.getElementById("code-lines");
+const copyBtn = document.getElementById("copy-code-btn");
+const copyStatus = document.getElementById("copy-status");
 const tabs = document.querySelectorAll(".tab");
 const heroEyebrow = document.getElementById("hero-eyebrow");
 const heroTitle = document.getElementById("hero-title");
@@ -114,6 +118,24 @@ const ALGORITHMS = {
     ],
     generator: generateQuickSteps,
   },
+  merge: {
+    key: "merge",
+    label: "Merge Sort",
+    short: "Merge",
+    title: "分割してマージするマージソート",
+    description: "左右に分割してから統合する流れを、範囲とmidを追跡しながら確認できます。",
+    mainTitle: "マージソート可視化",
+    code: [
+      "function mergeSort(arr, l, r) {",
+      "  if (l >= r) return;",
+      "  const m = Math.floor((l + r) / 2);",
+      "  mergeSort(arr, l, m);",
+      "  mergeSort(arr, m + 1, r);",
+      "  merge(arr, l, m, r);",
+      "}",
+    ],
+    generator: generateMergeSteps,
+  },
 };
 
 let steps = [];
@@ -124,6 +146,7 @@ let timer = null;
 let currentValues = [...DEFAULT_VALUES];
 let currentAlgo = "bubble";
 const barMap = new Map();
+let dividerEl = null;
 
 function toSnapshot(items) {
   return items.map((item) => ({ id: item.id, value: item.value }));
@@ -158,6 +181,7 @@ function pushStep(stepList, payload) {
     keyValue: payload.keyValue ?? null,
     minIdx: payload.minIdx ?? null,
     pivotValue: payload.pivotValue ?? null,
+    midIdx: payload.midIdx ?? null,
     rangeLow: payload.rangeLow ?? null,
     rangeHigh: payload.rangeHigh ?? null,
     ...payload,
@@ -349,6 +373,229 @@ function generateSelectionSteps(values) {
     array: arr,
     line: 11,
     minIdx: null,
+    log: "全て整列しました。",
+  });
+
+  return list;
+}
+
+function generateMergeSteps(values) {
+  const arr = createItems(values);
+  const aux = Array.from(arr);
+  const list = [];
+  const sortedSet = new Set();
+
+  pushStep(list, {
+    type: "start",
+    i: null,
+    j: null,
+    active: [],
+    array: arr,
+    line: 1,
+    log: "マージソートを開始します。",
+  });
+
+  function mergeRange(low, mid, high) {
+    let i = low;
+    let j = mid + 1;
+    let k = low;
+
+    while (i <= mid && j <= high) {
+      const leftVal = arr[i].value;
+      const rightVal = arr[j].value;
+      pushStep(list, {
+        type: "compare",
+        i,
+        j,
+        active: [i, j],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 6,
+        midIdx: mid,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `${leftVal} と ${rightVal} を比較します。`,
+      });
+
+      if (leftVal <= rightVal) {
+        aux[k] = arr[i];
+        pushStep(list, {
+          type: "place",
+          i,
+          j,
+          active: [i],
+          special: [k],
+          sortedIndices: Array.from(sortedSet),
+          array: arr,
+          line: 6,
+          midIdx: mid,
+          rangeLow: low,
+          rangeHigh: high,
+          log: `${leftVal} を結合結果へ配置します。`,
+        });
+        i += 1;
+      } else {
+        aux[k] = arr[j];
+        pushStep(list, {
+          type: "place",
+          i,
+          j,
+          active: [j],
+          special: [k],
+          sortedIndices: Array.from(sortedSet),
+          array: arr,
+          line: 6,
+          midIdx: mid,
+          rangeLow: low,
+          rangeHigh: high,
+          log: `${rightVal} を結合結果へ配置します。`,
+        });
+        j += 1;
+      }
+      k += 1;
+    }
+
+    while (i <= mid) {
+      aux[k] = arr[i];
+      pushStep(list, {
+        type: "place",
+        i,
+        j: null,
+        active: [i],
+        special: [k],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 6,
+        midIdx: mid,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `${arr[i].value} を結合結果へ配置します。`,
+      });
+      i += 1;
+      k += 1;
+    }
+
+    while (j <= high) {
+      aux[k] = arr[j];
+      pushStep(list, {
+        type: "place",
+        i: null,
+        j,
+        active: [j],
+        special: [k],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 6,
+        midIdx: mid,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `${arr[j].value} を結合結果へ配置します。`,
+      });
+      j += 1;
+      k += 1;
+    }
+
+    for (let idx = low; idx <= high; idx++) {
+      arr[idx] = aux[idx];
+    }
+
+    for (let idx = low; idx <= high; idx++) {
+      sortedSet.add(idx);
+    }
+
+    pushStep(list, {
+      type: "sorted",
+      i: null,
+      j: null,
+      active: [],
+      special: [],
+      sortedIndices: Array.from(sortedSet),
+      array: arr,
+      line: 6,
+      midIdx: mid,
+      rangeLow: low,
+      rangeHigh: high,
+      log: `区間 ${low}-${high} をマージしました。`,
+    });
+  }
+
+  function divide(low, high) {
+    if (low >= high) {
+      sortedSet.add(low);
+      pushStep(list, {
+        type: "sorted",
+        i: null,
+        j: null,
+        active: [low],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 2,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `要素 ${low} は単独で確定です。`,
+      });
+      return;
+    }
+    const mid = Math.floor((low + high) / 2);
+    pushStep(list, {
+      type: "divide",
+      i: null,
+      j: null,
+      active: [],
+      sortedIndices: Array.from(sortedSet),
+      array: arr,
+      line: 3,
+      midIdx: mid,
+      rangeLow: low,
+      rangeHigh: high,
+      log: `区間 ${low}-${high} を mid=${mid} で分割します。`,
+    });
+
+    pushStep(list, {
+      type: "recurse",
+      i: null,
+      j: null,
+      active: [],
+      sortedIndices: Array.from(sortedSet),
+      array: arr,
+      line: 4,
+      midIdx: mid,
+      rangeLow: low,
+      rangeHigh: mid,
+      log: `左側 ${low}-${mid} を再帰処理します。`,
+    });
+    divide(low, mid);
+
+    pushStep(list, {
+      type: "recurse",
+      i: null,
+      j: null,
+      active: [],
+      sortedIndices: Array.from(sortedSet),
+      array: arr,
+      line: 5,
+      midIdx: mid,
+      rangeLow: mid + 1,
+      rangeHigh: high,
+      log: `右側 ${mid + 1}-${high} を再帰処理します。`,
+    });
+    divide(mid + 1, high);
+
+    mergeRange(low, mid, high);
+  }
+
+  if (arr.length > 0) {
+    divide(0, arr.length - 1);
+  }
+
+  pushStep(list, {
+    type: "sorted-all",
+    i: null,
+    j: null,
+    active: [],
+    sortedIndices: Array.from(sortedSet),
+    array: arr,
+    line: 6,
     log: "全て整列しました。",
   });
 
@@ -668,6 +915,11 @@ function updateBars(step) {
   const items = step.array;
   chart.style.setProperty("--count", items.length || 1);
   ensureBars(items);
+  if (!dividerEl) {
+    dividerEl = document.createElement("div");
+    dividerEl.className = "divider";
+    chart.appendChild(dividerEl);
+  }
   const maxValue = Math.max(...items.map((item) => item.value), 0);
   const sortedSet = new Set(step.sortedIndices || []);
 
@@ -695,6 +947,23 @@ function updateBars(step) {
     bar.classList.toggle("sorted", isSorted);
     bar.classList.toggle("mark", step.special?.includes(index));
   });
+
+  const showDivider =
+    currentAlgo === "merge" &&
+    typeof step.midIdx === "number" &&
+    items.length > 0 &&
+    step.type === "divide";
+
+  if (dividerEl) {
+    if (showDivider) {
+      const boundary = Math.min(step.midIdx + 1, items.length);
+      const percent = (boundary / items.length) * 100;
+      dividerEl.style.left = `${percent}%`;
+      dividerEl.style.display = "block";
+    } else {
+      dividerEl.style.display = "none";
+    }
+  }
 }
 
 function updateStatus(step) {
@@ -710,6 +979,10 @@ function updateStatus(step) {
   const showKey = step.keyValue !== null && step.keyValue !== undefined;
   statusKeyWrap.classList.toggle("show", showKey);
   statusKey.textContent = showKey ? step.keyValue.toString() : "-";
+
+  const showMid = step.midIdx !== null && step.midIdx !== undefined;
+  statusMidWrap.classList.toggle("show", showMid);
+  statusMid.textContent = showMid ? step.midIdx.toString() : "-";
 
   const showPivot = step.pivotValue !== null && step.pivotValue !== undefined;
   statusPivotWrap.classList.toggle("show", showPivot);
@@ -802,6 +1075,7 @@ function setNewValues(values) {
   stopPlaying();
   barMap.clear();
   chart.innerHTML = "";
+  dividerEl = null;
   const generator = ALGORITHMS[currentAlgo].generator;
   steps = generator(values);
   currentStep = 0;
@@ -853,6 +1127,42 @@ tabs.forEach((tab) => {
     setAlgorithm(algoKey);
   });
 });
+
+async function copyCurrentCode() {
+  const code = ALGORITHMS[currentAlgo].code.join("\n");
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(code);
+      showCopyStatus("コピーしました");
+      return;
+    }
+  } catch (err) {
+    // fallback below
+  }
+  const ta = document.createElement("textarea");
+  ta.value = code;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  showCopyStatus("コピーしました");
+}
+
+let copyTimer = null;
+function showCopyStatus(message) {
+  if (!copyStatus) return;
+  copyStatus.textContent = message;
+  if (copyTimer) {
+    clearTimeout(copyTimer);
+  }
+  copyTimer = setTimeout(() => {
+    copyStatus.textContent = "";
+  }, 1800);
+}
+
+copyBtn.addEventListener("click", copyCurrentCode);
 
 setAlgorithm(currentAlgo, { regenerate: false });
 setNewValues(currentValues);
