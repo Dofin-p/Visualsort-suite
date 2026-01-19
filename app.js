@@ -12,6 +12,10 @@ const statusMin = document.getElementById("status-min");
 const statusMinWrap = document.getElementById("status-min-wrap");
 const statusKey = document.getElementById("status-key");
 const statusKeyWrap = document.getElementById("status-key-wrap");
+const statusPivot = document.getElementById("status-pivot");
+const statusPivotWrap = document.getElementById("status-pivot-wrap");
+const statusRange = document.getElementById("status-range");
+const statusRangeWrap = document.getElementById("status-range-wrap");
 const statusStep = document.getElementById("status-step");
 const logList = document.getElementById("log-list");
 const codeContainer = document.getElementById("code-lines");
@@ -88,6 +92,28 @@ const ALGORITHMS = {
     ],
     generator: generateInsertionSteps,
   },
+  quick: {
+    key: "quick",
+    label: "Quick Sort",
+    short: "Quick",
+    title: "ピボットを基準に左右へ分割するクイックソート",
+    description: "ピボット選択→分割→再帰の流れを、範囲とピボットを追跡しながら理解できます。",
+    mainTitle: "クイックソート可視化",
+    code: [
+      "function quick(arr, low, high) {",
+      "  if (low >= high) return;",
+      "  const pivot = arr[high];",
+      "  let i = low;",
+      "  for (let j = low; j < high; j++) {",
+      "    if (arr[j] < pivot) swap(arr, i++, j);",
+      "  }",
+      "  swap(arr, i, high);",
+      "  quick(arr, low, i - 1);",
+      "  quick(arr, i + 1, high);",
+      "}",
+    ],
+    generator: generateQuickSteps,
+  },
 };
 
 let steps = [];
@@ -131,6 +157,9 @@ function pushStep(stepList, payload) {
     sortedIndex: payload.sortedIndex ?? null,
     keyValue: payload.keyValue ?? null,
     minIdx: payload.minIdx ?? null,
+    pivotValue: payload.pivotValue ?? null,
+    rangeLow: payload.rangeLow ?? null,
+    rangeHigh: payload.rangeHigh ?? null,
     ...payload,
     array: toSnapshot(payload.array),
   });
@@ -419,6 +448,177 @@ function generateInsertionSteps(values) {
   return list;
 }
 
+function generateQuickSteps(values) {
+  const arr = createItems(values);
+  const list = [];
+  const sortedSet = new Set();
+
+  pushStep(list, {
+    type: "start",
+    i: null,
+    j: null,
+    active: [],
+    array: arr,
+    line: 1,
+    log: "クイックソートを開始します。",
+  });
+
+  const stack = [];
+  if (arr.length > 0) {
+    stack.push({ low: 0, high: arr.length - 1 });
+  }
+
+  while (stack.length) {
+    const { low, high } = stack.pop();
+
+    if (low >= high) {
+      sortedSet.add(low);
+      pushStep(list, {
+        type: "sorted",
+        i: null,
+        j: null,
+        active: [],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 2,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `区間 ${low}-${high} は要素数1のため確定です。`,
+      });
+      continue;
+    }
+
+    const pivotIdx = high;
+    const pivotValue = arr[pivotIdx].value;
+    let store = low;
+
+    pushStep(list, {
+      type: "pivot",
+      i: null,
+      j: null,
+      active: [pivotIdx],
+      special: [pivotIdx],
+      sortedIndices: Array.from(sortedSet),
+      array: arr,
+      line: 3,
+      pivotValue,
+      rangeLow: low,
+      rangeHigh: high,
+      log: `区間 ${low}-${high} のピボットを ${pivotValue} に設定します。`,
+    });
+
+    for (let j = low; j < high; j++) {
+      const current = arr[j].value;
+      pushStep(list, {
+        type: "compare",
+        i: null,
+        j,
+        active: [j, pivotIdx],
+        special: [pivotIdx],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 5,
+        pivotValue,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `${current} とピボット ${pivotValue} を比較します。`,
+      });
+
+      if (current < pivotValue) {
+        if (store !== j) {
+          [arr[store], arr[j]] = [arr[j], arr[store]];
+          pushStep(list, {
+            type: "swap",
+            i: null,
+            j,
+            active: [store, j],
+            special: [pivotIdx],
+            sortedIndices: Array.from(sortedSet),
+            array: arr,
+            line: 6,
+            pivotValue,
+            rangeLow: low,
+            rangeHigh: high,
+            log: `${current} を左側へ移動します。`,
+          });
+        }
+        store += 1;
+      }
+    }
+
+    if (store !== pivotIdx) {
+      [arr[store], arr[pivotIdx]] = [arr[pivotIdx], arr[store]];
+      pushStep(list, {
+        type: "swap",
+        i: null,
+        j: pivotIdx,
+        active: [store, pivotIdx],
+        special: [store],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 8,
+        pivotValue,
+        rangeLow: low,
+        rangeHigh: high,
+        log: `ピボットを位置 ${store} に確定させます。`,
+      });
+    }
+
+    sortedSet.add(store);
+    pushStep(list, {
+      type: "sorted",
+      i: null,
+      j: null,
+      active: [store],
+      special: [],
+      sortedIndices: Array.from(sortedSet),
+      array: arr,
+      line: 8,
+      pivotValue,
+      rangeLow: low,
+      rangeHigh: high,
+      log: `ピボット ${pivotValue} を確定し、左右を分割します。`,
+    });
+
+    const leftHigh = store - 1;
+    const rightLow = store + 1;
+    if (leftHigh >= low) {
+      stack.push({ low, high: leftHigh });
+      pushStep(list, {
+        type: "recurse",
+        i: null,
+        j: null,
+        active: [],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 9,
+        pivotValue,
+        rangeLow: low,
+        rangeHigh: leftHigh,
+        log: `左区間 ${low}-${leftHigh} を再帰的に処理します。`,
+      });
+    }
+    if (high >= rightLow) {
+      stack.push({ low: rightLow, high });
+      pushStep(list, {
+        type: "recurse",
+        i: null,
+        j: null,
+        active: [],
+        sortedIndices: Array.from(sortedSet),
+        array: arr,
+        line: 10,
+        pivotValue,
+        rangeLow: rightLow,
+        rangeHigh: high,
+        log: `右区間 ${rightLow}-${high} を再帰的に処理します。`,
+      });
+    }
+  }
+
+  return list;
+}
+
 function setError(message) {
   errorEl.textContent = message;
 }
@@ -510,6 +710,20 @@ function updateStatus(step) {
   const showKey = step.keyValue !== null && step.keyValue !== undefined;
   statusKeyWrap.classList.toggle("show", showKey);
   statusKey.textContent = showKey ? step.keyValue.toString() : "-";
+
+  const showPivot = step.pivotValue !== null && step.pivotValue !== undefined;
+  statusPivotWrap.classList.toggle("show", showPivot);
+  statusPivot.textContent = showPivot ? step.pivotValue.toString() : "-";
+
+  const showRange =
+    step.rangeLow !== null &&
+    step.rangeLow !== undefined &&
+    step.rangeHigh !== null &&
+    step.rangeHigh !== undefined;
+  statusRangeWrap.classList.toggle("show", showRange);
+  statusRange.textContent = showRange
+    ? `${step.rangeLow}-${step.rangeHigh}`
+    : "-";
 }
 
 function updateLog(index) {

@@ -6,6 +6,10 @@
   --accent-strong: #ff6a3d;
   --calm: #2d8cff;
   --mark: #d946ef;
+  --teal: #1f8a8a;
+  --teal-strong: #166b6b;
+  --teal-light: #d6f0f0;
+  --navy: #1f2d3d;
   --muted: #5b5b5b;
   --card: rgba(255, 255, 255, 0.86);
   --shadow: 0 20px 50px rgba(25, 20, 15, 0.15);
@@ -61,22 +65,43 @@ body {
 
 .tab {
   border: none;
-  background: transparent;
-  color: var(--ink);
+  position: relative;
+  background: #fff;
+  color: var(--navy);
   padding: 10px 16px;
   border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
   font-weight: 700;
+  font-size: 0.92rem;
   cursor: pointer;
-  transition: background 0.25s ease, transform 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease, border-color 0.2s ease, font-size 0.2s ease;
 }
 
 .tab:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--teal-light);
+  color: var(--navy);
 }
 
 .tab.active {
-  background: #fff;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  background: var(--teal);
+  color: #fff;
+  font-size: 0.98rem;
+  font-weight: 800;
+  border-color: var(--teal-strong);
+  box-shadow: 0 8px 18px rgba(22, 107, 107, 0.28);
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: -6px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--teal);
+  box-shadow: 0 0 0 1px var(--teal-strong);
 }
 
 .eyebrow {
@@ -295,7 +320,26 @@ button:not(.tab):hover {
   gap: 6px;
   max-height: 160px;
   overflow-y: auto;
+  padding-right: 8px;
   font-size: 0.85rem;
+}
+
+.log ul::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log ul::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 999px;
+}
+
+.log ul::-webkit-scrollbar-thumb {
+  background: rgba(31, 138, 138, 0.6);
+  border-radius: 999px;
+}
+
+.log ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(22, 107, 107, 0.8);
 }
 
 .code {
